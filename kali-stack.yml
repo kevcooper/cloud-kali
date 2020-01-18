@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Create a kali VM in AWS
+
+Parameters:
+  SSHKeyName:
+    Type: String
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.medium
+    AllowedValues:
+    - t1.micro
+    - t2.nano
+    - t2.micro
+    - t2.small
+    - t2.medium
+
+Resources:
+  kaliBox:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-0efaa1daf599f3b8e"
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: SSHKeyName
+      SecurityGroups:
+        - Ref: kaliSecGroup
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: kaliSecGroup
+          SubnetId:
+            Ref: kaliSubnet
+      Tags:
+        - Key: Stack
+          Value: !Ref AWS::StackName
+
+  kaliSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+
+  kaliVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.20.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Stack
+          Value: !Ref AWS::StackName
+
+  kaliSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref kaliVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: 10.20.0.0/16
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Stack
+          Value: !Ref AWS::StackName
